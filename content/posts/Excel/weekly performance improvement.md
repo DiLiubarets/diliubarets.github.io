@@ -267,6 +267,9 @@ Sub CreatePivot_Week1_2()
     ' Run Macro3
     Macro3
 
+    ' Run Macro6
+    Macro6
+
     ' Success message
     MsgBox "Pivot Table for Week 1-2 created successfully!", vbInformation
 
@@ -317,5 +320,21 @@ Sub Macro3()
     ws.Range("L16").AutoFill Destination:=ws.Range("L16:L" & lastRow)
 
     Application.CutCopyMode = False
+End Sub
+
+Sub Macro6()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Worksheets("SP#")
+
+    ' Insert three columns at the beginning
+    ws.Columns("A:A").Insert Shift:=xlToRight
+    ws.Columns("A:A").Insert Shift:=xlToRight
+    ws.Columns("A:A").Insert Shift:=xlToRight
+
+    ' Insert three rows above row 8
+    ws.Rows("8:8").Insert Shift:=xlDown
+    ws.Rows("8:8").Insert Shift:=xlDown
+    ws.Rows("8:8").Insert Shift:=xlDown
+
 End Sub
 ```
