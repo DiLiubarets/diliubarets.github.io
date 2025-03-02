@@ -349,3 +349,132 @@ Sub Macro6()
 
 End Sub
 ```
+
+
+```vb
+Sub CreatePivotWAR_report()
+    Dim wsData As Worksheet, wsPivot As Worksheet
+    Dim pivotCache As PivotCache, pivotTable As PivotTable
+    Dim pivotRange As Range, pivotDestination As Range
+    Dim monthName As String
+    Dim lastRow As Long, lastCol As Long
+    Dim cell As Range, field As PivotField, pf As PivotField
+    Dim totalValue As Double
+    Dim dataField As PivotField
+
+    ' Get current month name
+    monthName = Format(Date, "mmm")
+
+    ' Set wsData to the sheet named "WAR <monthName>"
+    On Error Resume Next
+    Set wsData = ThisWorkbook.Worksheets("WAR " & monthName)
+    On Error GoTo 0
+
+    If wsData Is Nothing Then
+        MsgBox "Sheet 'WAR " & monthName & "' does not exist.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Find last row and last column dynamically
+    lastRow = wsData.Cells(Rows.Count, 1).End(xlUp).Row
+    lastCol = wsData.Cells(1, Columns.Count).End(xlToLeft).Column
+
+    ' Define pivot range dynamically
+    Set pivotRange = wsData.Range(wsData.Cells(1, 1), wsData.Cells(lastRow, lastCol))
+
+    ' Ensure the "SP#" sheet exists
+    On Error Resume Next
+    Set wsPivot = ThisWorkbook.Worksheets("SP#")
+    On Error GoTo 0
+
+    If wsPivot Is Nothing Then
+        MsgBox "Sheet 'SP#' does not exist.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Set pivot table destination
+    Set pivotDestination = wsPivot.Range("A12")
+
+    ' Delete existing PivotTable if it exists
+    On Error Resume Next
+    wsPivot.PivotTables("WAR_Pivot").TableRange2.Clear
+    On Error GoTo 0
+
+    ' Create Pivot Cache & PivotTable
+    On Error Resume Next
+    Set pivotCache = ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=pivotRange)
+    If Err.Number <> 0 Then
+        MsgBox "Error creating PivotCache: " & Err.Description, vbExclamation
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    On Error Resume Next
+    Set pivotTable = pivotCache.CreatePivotTable(TableDestination:=pivotDestination, TableName:="WAR_Pivot")
+    If Err.Number <> 0 Then
+        MsgBox "Error creating PivotTable: " & Err.Description, vbExclamation
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' Add fields to PivotTable dynamically
+    With pivotTable
+        ' Add "WP" as Row Field if it exists
+        If FieldExists(wsData, "WP") Then .PivotFields("WP").Orientation = xlRowField
+
+        ' Add "Type of Work" as Page Field (Filter) if it exists
+        If FieldExists(wsData, "Type of Work") Then .PivotFields("Type of Work").Orientation = xlPageField
+
+        ' Loop through columns to add numeric fields as Data Fields
+        For Each cell In wsData.Range(wsData.Cells(1, 1), wsData.Cells(1, lastCol))
+            If IsNumeric(wsData.Cells(2, cell.Column).Value) Then
+                .PivotFields(cell.Value).Orientation = xlDataField
+            End If
+        Next cell
+    End With
+
+    ' Apply filter to "Type of Work" field if it exists
+    On Error Resume Next
+    pivotTable.PivotFields("Type of Work").CurrentPage = "Discrete"
+    On Error GoTo 0
+
+    ' Format PivotTable
+    With pivotTable
+        .RowAxisLayout xlTabularRow
+        .TableStyle2 = "PivotStyleMedium15"
+        .DisplayFieldCaptions = False
+        .ColumnGrand = True
+        .RowGrand = False
+    End With
+
+    ' Update field captions
+    For Each field In pivotTable.DataFields
+        field.Caption = Replace(field.Caption, "Sum of ", "")
+        field.Caption = Replace(field.Caption, "Max of ", "")
+    Next field
+
+    ' Disable subtotals for Row Fields
+    For Each pf In pivotTable.RowFields
+        pf.Subtotals = Array(False, False, False, False, False, False, False, False, False, False, False, False)
+    Next pf
+
+    ' AutoFit all columns
+    wsPivot.Cells.EntireColumn.AutoFit
+
+    ' Success message
+    MsgBox "Pivot Table created successfully in 'SP#'!", vbInformation
+
+End Sub
+
+' Function to check if a field exists in the dataset
+Function FieldExists(ws As Worksheet, fieldName As String) As Boolean
+    Dim cell As Range
+    FieldExists = False
+    For Each cell In ws.Range("A1:Z1") ' Adjust range if needed
+        If cell.Value = fieldName Then
+            FieldExists = True
+            Exit Function
+        End If
+    Next cell
+End Function
+```
