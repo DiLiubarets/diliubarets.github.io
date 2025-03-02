@@ -210,8 +210,19 @@ Sub CreatePivot_Week1_2()
     Next field
 
     ' Set number format
-    pivotTable.DataFields("EV,%").NumberFormat = "0.00%"
-    pivotTable.DataFields("AC/ETC").NumberFormat = "0.00%"
+    'pivotTable.DataFields("EV,%").NumberFormat = "0.00%"
+    'pivotTable.DataFields("AC/ETC").NumberFormat = "0.00%"
+    Dim df As PivotField
+	
+	' Loop through Pivot Table Data Fields to find and format "EV,%" and "AC/ETC"
+	For Each df In pivotTable.DataFields
+	    Select Case df.Name
+	        Case "EV,%"
+	            df.NumberFormat = "0.00%"
+	        Case "AC/ETC"
+	            df.NumberFormat = "0.00%"
+	    End Select
+	Next df
 
     ' Pivot Table formatting
     With pivotTable
