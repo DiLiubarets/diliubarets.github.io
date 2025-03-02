@@ -595,3 +595,66 @@ Function FieldExists(ws As Worksheet, fieldName As String) As Boolean
     Next cell
 End Function
 ```
+#### **copy Pivot**
+```vb
+Sub AddFormulaAndConvertToTable()
+
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim tableRange As Range
+    Dim tbl As ListObject
+    Dim tblName As String
+
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("SP#")
+
+    ' Find the last used row in column E dynamically
+    lastRow = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+
+    ' Find the last used column dynamically (starting from column T)
+    lastCol = ws.Cells(11, ws.Columns.Count).End(xlToLeft).Column
+
+    ' Ensure lastCol is at least column T (20th column)
+    If lastCol < 20 Then lastCol = 29 ' Column AC (29th column)
+
+    ' Apply formula dynamically in column T
+    Dim i As Long
+    For i = 11 To lastRow
+        ws.Cells(i, "T").Formula = "=IF(ISBLANK(E" & i & "),"""",E" & i & ")"
+    Next i
+
+    ' Define the range to autofill dynamically
+    Dim formulaRange As Range, fillRange As Range
+    Set formulaRange = ws.Range("T11:T" & lastRow)
+    Set fillRange = ws.Range("T11", ws.Cells(11, lastCol)) ' Expands to the last column
+
+    ' Fill across dynamically
+    formulaRange.Copy
+    fillRange.PasteSpecial Paste:=xlPasteFormulas
+
+    ' Fill down dynamically
+    fillRange.AutoFill Destination:=ws.Range("T11", ws.Cells(lastRow, lastCol)), Type:=xlFillDefault
+
+    ' Clean up clipboard
+    Application.CutCopyMode = False
+
+    ' Define the table range
+    Set tableRange = ws.Range("T11", ws.Cells(lastRow, lastCol))
+
+    ' Delete existing table if it exists
+    On Error Resume Next
+    Set tbl = ws.ListObjects("SP_Table")
+    If Not tbl Is Nothing Then tbl.Delete
+    On Error GoTo 0
+
+    ' Create a new table
+    Set tbl = ws.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
+    tbl.Name = "SP_Table"
+    tbl.TableStyle = "TableStyleMedium9" ' Change style if needed
+
+    ' Notify user
+    MsgBox "Formula added dynamically and converted to a table (SP_Table)!", vbInformation
+
+End Sub
+```
