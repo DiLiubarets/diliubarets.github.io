@@ -140,3 +140,182 @@ Sub InsertWPColumn(ws As Worksheet)
     End If
 End Sub
 ```
+#### **CreatePivot_Week1_2**
+```vb
+Sub CreatePivot_Week1_2()
+
+    Dim wsData As Worksheet, wsPivot As Worksheet
+    Dim pivotCache As PivotCache, pivotTable As PivotTable
+    Dim pivotRange As Range, pivotDestination As Range
+    Dim lastColumn As Long, lastRow As Long
+    Dim cell As Range, field As PivotField, pf As PivotField
+    Dim totalValue As Double
+
+    ' Set source data
+    Set wsData = ThisWorkbook.Worksheets("general_report")
+    Set pivotRange = wsData.Range("A1").CurrentRegion
+
+    ' Delete existing "SP#" sheet if it exists
+    Application.DisplayAlerts = False
+    On Error Resume Next
+    ThisWorkbook.Worksheets("SP#").Delete
+    On Error GoTo 0
+    Application.DisplayAlerts = True
+
+    ' Create new Pivot Table sheet
+    Set wsPivot = ThisWorkbook.Worksheets.Add
+    wsPivot.Name = "SP#"
+
+    ' Set pivot table destination
+    Set pivotDestination = wsPivot.Range("B10")
+
+    ' Create Pivot Cache & Pivot Table
+    Set pivotCache = ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=pivotRange)
+    Set pivotTable = pivotCache.CreatePivotTable(TableDestination:=pivotDestination, TableName:="MyPivotTable")
+
+    ' Add fields to Pivot Table
+    With pivotTable
+        .PivotFields("WP").Orientation = xlRowField
+        .PivotFields("Epic Link").Orientation = xlRowField
+        .PivotFields("ETC").Orientation = xlDataField
+        .PivotFields("EV").Orientation = xlDataField
+        .PivotFields("Type of Work").Orientation = xlPageField
+    End With
+
+    ' Apply filter to "Type of Work"
+    pivotTable.PivotFields("Type of Work").CurrentPage = "Discrete"
+
+    ' Set "ACWP1/2" to show the maximum value
+    With pivotTable.PivotFields("ACWP1/2")
+        .Orientation = xlDataField
+        .Function = xlMax
+    End With
+
+    ' Add calculated fields
+    With pivotTable.CalculatedFields
+        .Add "EV,%", "= 'EV' / 'ETC'"
+        .Add "AC/ETC", "= MAX('ACWP1/2') / 'ETC'"
+    End With
+
+    ' Add calculated fields to Pivot Table
+    With pivotTable
+        .PivotFields("EV,%").Orientation = xlDataField
+        .PivotFields("AC/ETC").Orientation = xlDataField
+    End With
+
+    ' Rename field headers
+    For Each field In pivotTable.DataFields
+        field.Caption = Replace(field.Caption, "Sum of ", "")
+        field.Caption = Replace(field.Caption, "Max of ", "")
+    Next field
+
+    ' Set number format
+    pivotTable.DataFields("EV,%").NumberFormat = "0.00%"
+    pivotTable.DataFields("AC/ETC").NumberFormat = "0.00%"
+
+    ' Pivot Table formatting
+    With pivotTable
+        .RowAxisLayout xlTabularRow
+        .TableStyle2 = "PivotStyleLight15"
+        .DisplayFieldCaptions = False
+        .ColumnGrand = False
+        .RowGrand = False
+    End With
+
+    ' Disable subtotals
+    For Each pf In pivotTable.RowFields
+        pf.Subtotals = Array(False, False, False, False, False, False, False, False, False, False, False, False)
+    Next pf
+
+    ' Find last column
+    lastColumn = FindLastColumn(wsPivot, 13)
+
+    ' Insert "Total" row
+    With wsPivot.Cells(9, 2)
+        .Value = "Total"
+        .Font.Bold = True
+        .Interior.Color = RGB(0, 0, 0)
+        .Font.Color = RGB(255, 255, 255)
+    End With
+
+    ' Add total formulas
+    For Each cell In wsPivot.Range(wsPivot.Cells(9, 3), wsPivot.Cells(9, lastColumn))
+        lastRow = FindLastRow(wsPivot, cell.Column)
+        Dim columnHeader As String
+        columnHeader = wsPivot.Cells(10, cell.Column).Value
+
+        Select Case columnHeader
+            Case "EV,%", "AC/ETC"
+                cell.Value = ""
+            Case Else
+                cell.Formula = "=SUM(" & wsPivot.Cells(11, cell.Column).Address & ":" & wsPivot.Cells(lastRow, cell.Column).Address & ")"
+                If IsNumeric(cell.Value) Then
+                    totalValue = cell.Value
+                    If totalValue = 0 Then cell.Value = ""
+                End If
+        End Select
+
+        ' Format total row
+        cell.Font.Bold = True
+        cell.Interior.Color = RGB(0, 0, 0)
+        cell.Font.Color = RGB(255, 255, 255)
+    Next cell
+
+    ' AutoFit columns
+    wsPivot.Cells.EntireColumn.AutoFit
+
+    ' Run Macro3
+    Macro3
+
+    ' Success message
+    MsgBox "Pivot Table for Week 1-2 created successfully!", vbInformation
+
+End Sub
+
+' Function to find the last row in a column
+Function FindLastRow(ws As Worksheet, col As Long) As Long
+    FindLastRow = ws.Cells(ws.Rows.Count, col).End(xlUp).Row
+End Function
+
+' Function to find the last column in a row
+Function FindLastColumn(ws As Worksheet, row As Long) As Long
+    FindLastColumn = ws.Cells(row, ws.Columns.Count).End(xlToLeft).Column
+End Function
+
+Sub Macro3()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Worksheets("SP#")
+
+    ' Copy and paste formats
+    ws.Range("K13").Copy
+    ws.Range("K13").PasteSpecial Paste:=xlPasteFormats
+    Application.CutCopyMode = False
+
+    ws.Range("H13:I13").Copy
+    ws.Range("L13:M13").PasteSpecial Paste:=xlPasteFormats
+    Application.CutCopyMode = False
+
+    ' Remove background color from N13
+    ws.Range("N13").Interior.Pattern = xlNone
+
+    ' Hide rows 10-11
+    ws.Rows("10:11").Hidden = True
+
+    ' Insert blank rows above row 8
+    ws.Rows("8:8").Insert Shift:=xlDown
+    ws.Rows("8:8").Insert Shift:=xlDown
+
+    ' Insert new column A
+    ws.Columns("A:A").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+
+    ' Insert formula in L16
+    ws.Range("L16").FormulaR1C1 = "=IFERROR(RC[-2]/RC[-4],""NO ETC"")"
+
+    ' Autofill formula down
+    Dim lastRow As Long
+    lastRow = FindLastRow(ws, 12) ' Column L
+    ws.Range("L16").AutoFill Destination:=ws.Range("L16:L" & lastRow)
+
+    Application.CutCopyMode = False
+End Sub
+```
