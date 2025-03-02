@@ -69,3 +69,74 @@ Sub AdjustGeneralReport()
     MsgBox "Jira general_report adjusted"
 End Sub
 ```
+####  **Delete Rows Containing a Specific Text (Using AutoFilter)**
+```vb
+Sub DeleteRowsContaining(ws As Worksheet, searchText As String)
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    
+    With ws
+        .UsedRange.AutoFilter Field:=1, Criteria1:="*" & searchText & "*"
+        On Error Resume Next
+        .Rows("2:" & lastRow).SpecialCells(xlCellTypeVisible).EntireRow.Delete
+        On Error GoTo 0
+        .AutoFilterMode = False
+    End With
+End Sub
+```
+#### **Highlight Non-Numeric Values in a Column**
+```vb
+Sub HighlightNonNumericValues(ws As Worksheet, colName As String)
+    Dim col As Range, cell As Range
+    Dim lastRow As Long
+    
+    Set col = ws.Rows(1).Find(What:=colName, LookIn:=xlValues, LookAt:=xlWhole)
+    
+    If Not col Is Nothing Then
+        lastRow = ws.Cells(ws.Rows.Count, col.Column).End(xlUp).Row
+        For Each cell In ws.Range(col.Offset(1, 0), ws.Cells(lastRow, col.Column))
+            If Not IsNumeric(cell.Value) Then
+                cell.Interior.Color = RGB(139, 0, 0) ' Dark red
+            End If
+        Next cell
+    Else
+        MsgBox "Column '" & colName & "' not found!", vbExclamation
+    End If
+End Sub
+```
+####  **Insert WP Column and Apply XLOOKUP Formula**
+```vb
+Sub InsertWPColumn(ws As Worksheet)
+    Dim epicLinkCol As Range
+    Dim lastRow As Long
+    Dim wpColLetter As String
+    
+    Set epicLinkCol = ws.Rows(1).Find(What:="Epic Link", LookIn:=xlValues, LookAt:=xlWhole)
+    
+    If Not epicLinkCol Is Nothing Then
+        ' Insert new column
+        epicLinkCol.Offset(0, 1).EntireColumn.Insert Shift:=xlToRight
+        ws.Cells(1, epicLinkCol.Column + 1).Value = "WP"
+        
+        ' Get last row
+        lastRow = ws.Cells(ws.Rows.Count, epicLinkCol.Column).End(xlUp).Row
+        wpColLetter = Split(epicLinkCol.Offset(0, 1).Address, "$")(1)
+        
+        ' Apply XLOOKUP formula
+        ws.Range(wpColLetter & "2:" & wpColLetter & lastRow).Formula = _
+            "=XLOOKUP([@[Epic Link]],working!D:D,working!B:B,""NOT FOUND"")"
+        
+        ' Apply conditional formatting to highlight "NOT FOUND"
+        With ws.Range(wpColLetter & "2:" & wpColLetter & lastRow)
+            .FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, Formula1:="=""NOT FOUND"""
+            .FormatConditions(.FormatConditions.Count).SetFirstPriority
+            With .FormatConditions(1).Interior
+                .PatternColorIndex = xlAutomatic
+                .Color = RGB(255, 0, 0) ' Red
+            End With
+        End With
+    Else
+        MsgBox "Column 'Epic Link' not found!", vbExclamation
+    End If
+End Sub
+```
