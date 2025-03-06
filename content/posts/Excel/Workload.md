@@ -13,9 +13,9 @@ End Sub
 Sub AddSlicerToPivotTable()
 
     Dim ws As Worksheet
-    Dim pt As PivotTable
-    Dim slicerCache As SlicerCache
-    Dim slicer As Slicer
+    Dim pt As Excel.PivotTable
+    Dim slicerCache As Excel.SlicerCache
+    Dim slicer As Excel.Slicer
 
     ' Set worksheet reference
     Set ws = ThisWorkbook.Sheets("Executive_Report")
