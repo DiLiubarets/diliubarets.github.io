@@ -587,14 +587,20 @@ End Function
 ```
 
 ```vb
-Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+Private Sub Workbook_NewSheet(ByVal Sh As Object)
     Dim ws As Worksheet
-    Dim ptSheet As Worksheet
     Dim delayTime As Double
-
-    ' Check if the activated sheet is created from a PivotTable drill-down
-    If Sh.Name Like "Sheet*" Then ' Default Excel naming for new sheets
+    Dim newSheetName As String
+    
+    ' Check if the new sheet name starts with "Details"
+    If Left(Sh.Name, 7) = "Details" Then
         Set ws = Sh
+        
+        ' Rename the sheet to a custom name (change as needed)
+        newSheetName = "DrillDown_Data_" & Format(Now, "hhmmss")
+        On Error Resume Next
+        ws.Name = newSheetName
+        On Error GoTo 0
         
         ' Apply formatting (modify as needed)
         With ws.Cells
@@ -603,11 +609,11 @@ Private Sub Workbook_SheetActivate(ByVal Sh As Object)
             .Interior.ColorIndex = xlNone ' Remove background color
         End With
         
-        ' Set delay time (e.g., 10 seconds from now)
+        ' Set delay time (e.g., delete after 10 seconds)
         delayTime = Now + TimeValue("00:00:10")
         
         ' Schedule deletion of the sheet
-        Application.OnTime delayTime, "'DeleteSheet """ & ws.Name & """'"
+        Application.OnTime delayTime, "'DeleteSheet """ & newSheetName & """'"
     End If
 End Sub
 
