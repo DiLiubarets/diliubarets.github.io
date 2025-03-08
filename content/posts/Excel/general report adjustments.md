@@ -589,31 +589,28 @@ End Function
 ```vb
 Private Sub Workbook_NewSheet(ByVal Sh As Object)
     Dim ws As Worksheet
+    Dim tbl As ListObject
     Dim delayTime As Double
-    Dim newSheetName As String
     
-    ' Check if the new sheet name starts with "Details"
-    If Left(Sh.Name, 7) = "Details" Then
-        Set ws = Sh
+    ' Ensure the sheet is captured
+    Set ws = Sh
+    
+    ' Check if the sheet name starts with "Details"
+    If Left(ws.Name, 7) = "Details" Then
+        ' Check if there is a table in the new sheet
+        If ws.ListObjects.Count > 0 Then
+            ' Loop through all tables in the sheet
+            For Each tbl In ws.ListObjects
+                ' Apply "Light8" table style
+                tbl.TableStyle = "TableStyleLight8"
+            Next tbl
+        End If
         
-        ' Rename the sheet to a custom name (change as needed)
-        newSheetName = "DrillDown_Data_" & Format(Now, "hhmmss")
-        On Error Resume Next
-        ws.Name = newSheetName
-        On Error GoTo 0
-        
-        ' Apply formatting (modify as needed)
-        With ws.Cells
-            .Font.Name = "Arial"
-            .Font.Size = 10
-            .Interior.ColorIndex = xlNone ' Remove background color
-        End With
-        
-        ' Set delay time (e.g., delete after 10 seconds)
-        delayTime = Now + TimeValue("00:00:10")
+        ' Set delay time (e.g., delete after 1 minute)
+        delayTime = Now + TimeValue("00:01:00")
         
         ' Schedule deletion of the sheet
-        Application.OnTime delayTime, "'DeleteSheet """ & newSheetName & """'"
+        Application.OnTime delayTime, "'DeleteSheet """ & ws.Name & """'"
     End If
 End Sub
 
