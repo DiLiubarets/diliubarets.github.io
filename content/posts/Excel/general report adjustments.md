@@ -595,8 +595,8 @@ Private Sub Workbook_NewSheet(ByVal Sh As Object)
     ' Ensure the sheet is captured
     Set ws = Sh
     
-    ' Check if the sheet name starts with "Details"
-    If Left(ws.Name, 7) = "Details" Then
+    ' Check if the sheet name contains "Detail" anywhere
+    If InStr(1, ws.Name, "Detail", vbTextCompare) > 0 Then
         ' Check if there is a table in the new sheet
         If ws.ListObjects.Count > 0 Then
             ' Loop through all tables in the sheet
@@ -606,7 +606,7 @@ Private Sub Workbook_NewSheet(ByVal Sh As Object)
             Next tbl
         End If
         
-        ' Set delay time (e.g., delete after 1 minute)
+        ' Set delay time (delete after 1 minute)
         delayTime = Now + TimeValue("00:01:00")
         
         ' Schedule deletion of the sheet
