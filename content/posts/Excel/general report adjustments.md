@@ -585,3 +585,42 @@ Function SheetExists(sheetName As String) As Boolean
     SheetExists = Not ws Is Nothing
 End Function
 ```
+
+```vb
+Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+    Dim ws As Worksheet
+    Dim ptSheet As Worksheet
+    Dim delayTime As Double
+
+    ' Check if the activated sheet is created from a PivotTable drill-down
+    If Sh.Name Like "Sheet*" Then ' Default Excel naming for new sheets
+        Set ws = Sh
+        
+        ' Apply formatting (modify as needed)
+        With ws.Cells
+            .Font.Name = "Arial"
+            .Font.Size = 10
+            .Interior.ColorIndex = xlNone ' Remove background color
+        End With
+        
+        ' Set delay time (e.g., 10 seconds from now)
+        delayTime = Now + TimeValue("00:00:10")
+        
+        ' Schedule deletion of the sheet
+        Application.OnTime delayTime, "'DeleteSheet """ & ws.Name & """'"
+    End If
+End Sub
+
+Public Sub DeleteSheet(sheetName As String)
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets(sheetName)
+    
+    ' Delete the sheet if it still exists
+    If Not ws Is Nothing Then
+        Application.DisplayAlerts = False
+        ws.Delete
+        Application.DisplayAlerts = True
+    End If
+End Sub
+```
