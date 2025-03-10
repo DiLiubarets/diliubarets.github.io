@@ -468,3 +468,140 @@ Function IsInCollection(col As Collection, value As String) As Boolean
     IsInCollection = False
 End Function
 ```
+
+```vb
+Sub CountEmployeesByProject()
+    Dim ws As Worksheet
+    Dim pt As PivotTable
+    Dim pRange As Range
+    Dim rCell As Range
+    Dim projectCounts As Object
+    Dim employeeProjects As Object
+    Dim employeeName As String
+    Dim projectName As String
+    Dim storyPoints As Variant ' Use Variant to avoid type mismatch errors
+    Dim outputRow As Integer
+    Dim dataRange As Range
+    
+    ' Set the worksheet and pivot table
+    Set ws = ActiveSheet ' Use the active sheet
+    Set pt = ws.PivotTables(1) ' Assuming the first Pivot Table is the target
+    
+    ' Set the data range of the pivot table
+    Set pRange = pt.TableRange1
+    
+    ' Create dictionaries
+    Set projectCounts = CreateObject("Scripting.Dictionary") ' Stores project counts
+    Set employeeProjects = CreateObject("Scripting.Dictionary") ' Tracks projects per employee
+    
+    ' Loop through each row in the pivot table
+    For Each rCell In pRange.Rows
+        ' Read the first column (Employee Name)
+        employeeName = rCell.Cells(1, 1).Value
+        projectName = rCell.Cells(1, 2).Value ' Project Name (can be empty for subtotal rows)
+        storyPoints = rCell.Cells(1, 3).Value ' Assuming story points are in column 3
+        
+        ' Check if the row is a subtotal row (bold text)
+        If rCell.Cells(1, 1).Font.Bold Then
+            ' Remove " Total" from the employee name
+            employeeName = Replace(employeeName, " Total", "")
+            
+            ' This is a subtotal row, check if the employee's total is > 20
+            If IsNumeric(storyPoints) And storyPoints > 20 Then
+                ' If the employee worked on multiple projects, increment count for each
+                If employeeProjects.exists(employeeName) Then
+                    Dim proj As Variant
+                    For Each proj In employeeProjects(employeeName)
+                        If projectCounts.exists(proj) Then
+                            projectCounts(proj) = projectCounts(proj) + 1
+                        Else
+                            projectCounts.Add proj, 1
+                        End If
+                    Next proj
+                End If
+            End If
+            ' Remove employee from tracking after subtotal
+            If employeeProjects.exists(employeeName) Then
+                employeeProjects.Remove employeeName
+            End If
+        ElseIf projectName <> "" Then
+            ' This is a normal data row (not a subtotal), track the project for the employee
+            If Not employeeProjects.exists(employeeName) Then
+                Dim projCollection As Collection
+                Set projCollection = New Collection
+                employeeProjects.Add employeeName, projCollection
+            End If
+            
+            ' Add project to employee's collection if not already there
+            If Not IsInCollection(employeeProjects(employeeName), projectName) Then
+                employeeProjects(employeeName).Add projectName
+            End If
+        End If
+    Next rCell
+    
+    ' Set output location to J1
+    Dim outputCol As String
+    outputCol = "J"
+    outputRow = 1  ' Start from row 1
+    
+    ' Clear previous results (if any)
+    ws.Range(ws.Cells(outputRow, 10), ws.Cells(outputRow + 50, 11)).ClearContents ' J and K columns
+    
+    ' Write headers
+    ws.Cells(outputRow, 10).Value = "Project Name" ' Column J
+    ws.Cells(outputRow, 11).Value = "Employees Over 20 Story Points" ' Column K
+    
+    ' Format headers as bold
+    ws.Cells(outputRow, 10).Font.Bold = True
+    ws.Cells(outputRow, 11).Font.Bold = True
+    
+    ' Write data
+    Dim key As Variant
+    outputRow = outputRow + 1 ' Move to first data row
+    For Each key In projectCounts.keys
+        ws.Cells(outputRow, 10).Value = key ' Column J
+        ws.Cells(outputRow, 11).Value = projectCounts(key) ' Column K
+        outputRow = outputRow + 1
+    Next key
+    
+    ' Apply conditional formatting to column K
+    Set dataRange = ws.Range(ws.Cells(2, 11), ws.Cells(outputRow - 1, 11)) ' K2 to last row
+    
+    ' Clear previous conditional formatting
+    dataRange.FormatConditions.Delete
+    
+    ' Apply red format (4 or more employees)
+    With dataRange.FormatConditions.Add(Type:=xlCellValue, Operator:=xlGreaterEqual, Formula1:="4")
+        .Interior.Color = RGB(255, 0, 0) ' Red
+        .Font.Color = RGB(255, 255, 255) ' White text
+    End With
+    
+    ' Apply yellow format (1 or 2 employees)
+    With dataRange.FormatConditions.Add(Type:=xlCellValue, Operator:=xlLessEqual, Formula1:="2")
+        .Interior.Color = RGB(255, 255, 0) ' Yellow
+        .Font.Color = RGB(0, 0, 0) ' Black text
+    End With
+    
+    ' Apply green format (exactly 3 employees)
+    With dataRange.FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="3")
+        .Interior.Color = RGB(0, 255, 0) ' Green
+        .Font.Color = RGB(0, 0, 0) ' Black text
+    End With
+    
+    MsgBox "Analysis Complete! Results are placed in columns J and K with conditional formatting.", vbInformation
+End Sub
+
+' Helper function to check if a value exists in a Collection
+Function IsInCollection(col As Collection, value As String) As Boolean
+    Dim item As Variant
+    On Error Resume Next
+    For Each item In col
+        If item = value Then
+            IsInCollection = True
+            Exit Function
+        End If
+    Next item
+    On Error GoTo 0
+    IsInCollection = False
+End Function
+```
