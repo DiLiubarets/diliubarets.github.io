@@ -610,28 +610,29 @@ End Function
 Sub CopyPivotTableData()
     Dim ws As Worksheet
     Dim pt As PivotTable
-    Dim rng As Range
     Dim cell As Range
     Dim copyRange As Range
     Dim destCell As Range
-    Dim lastRow As Long
+    Dim lastCol As Integer
+    Dim lastRow As Integer
     
-    ' Set worksheet and pivot table
+    ' Set the worksheet and pivot table
     Set ws = ThisWorkbook.Sheets("Summary")
     Set pt = ws.PivotTables("GereralPivotTable")
     
-    ' Find the last row of the pivot table
-    lastRow = pt.TableRange1.Rows.Count
-    
-    ' Set the destination cell
+    ' Set the destination cell (starting point for pasting)
     Set destCell = ws.Range("S4")
     
-    ' Copy headers
-    pt.TableRange1.Rows(1).Copy
-    destCell.PasteSpecial Paste:=xlPasteValuesAndNumberFormats
+    ' Identify the last column in the pivot table (Grand Total column is usually the last one)
+    lastCol = pt.DataBodyRange.Columns.Count
     
-    ' Loop through pivot table data to check Grand Total column
-    For Each cell In pt.DataBodyRange.Columns(pt.DataBodyRange.Columns.Count).Cells
+    ' Copy headers from the Pivot Table and paste into the destination
+    pt.TableRange1.Rows(1).Copy
+    destCell.PasteSpecial Paste:=xlPasteValues
+    destCell.PasteSpecial Paste:=xlPasteFormats
+    
+    ' Loop through the Grand Total column to find rows where the value is >21
+    For Each cell In pt.DataBodyRange.Columns(lastCol).Cells
         If IsNumeric(cell.Value) And cell.Value > 21 Then
             ' If first row to copy, set copyRange
             If copyRange Is Nothing Then
@@ -643,10 +644,11 @@ Sub CopyPivotTableData()
         End If
     Next cell
     
-    ' Copy the filtered rows
+    ' Copy and paste the filtered rows
     If Not copyRange Is Nothing Then
         copyRange.Copy
-        destCell.Offset(1, 0).PasteSpecial Paste:=xlPasteValuesAndNumberFormats
+        destCell.Offset(1, 0).PasteSpecial Paste:=xlPasteValues
+        destCell.Offset(1, 0).PasteSpecial Paste:=xlPasteFormats
     End If
     
     ' Clean up
