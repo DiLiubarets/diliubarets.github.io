@@ -615,8 +615,8 @@ Sub CopyPivotTableData()
     Dim destCell As Range
     Dim lastCol As Integer
     Dim headerRows As Integer
-    Dim dataStartRow As Integer
     Dim rowRange As Range
+    Dim pasteRange As Range
     
     ' Set the worksheet and pivot table
     Set ws = ThisWorkbook.Sheets("Summary")
@@ -636,21 +636,22 @@ Sub CopyPivotTableData()
     destCell.PasteSpecial Paste:=xlPasteValues
     destCell.PasteSpecial Paste:=xlPasteFormats
     
-    ' Determine where data starts (below the headers)
-    dataStartRow = headerRows + 1
-    
     ' Loop through the Grand Total column to find rows where the value is >21
     For Each cell In pt.DataBodyRange.Columns(lastCol).Cells
+        ' Ensure the row is NOT a "Grand Total" row
         If IsNumeric(cell.Value) And cell.Value > 21 Then
-            ' Get the actual row range within the entire Pivot Table (including row fields)
-            Set rowRange = Intersect(cell.EntireRow, pt.TableRange1)
-            
-            ' If first row to copy, set copyRange
-            If copyRange Is Nothing Then
-                Set copyRange = rowRange
-            Else
-                ' Extend the range to include this row
-                Set copyRange = Union(copyRange, rowRange)
+            ' Check if the row contains "Grand Total" in the first column (adjust if needed)
+            If LCase(cell.EntireRow.Cells(1, 1).Value) <> "grand total" Then
+                ' Get the actual row range within the entire Pivot Table (including row fields)
+                Set rowRange = Intersect(cell.EntireRow, pt.TableRange1)
+                
+                ' If first row to copy, set copyRange
+                If copyRange Is Nothing Then
+                    Set copyRange = rowRange
+                Else
+                    ' Extend the range to include this row
+                    Set copyRange = Union(copyRange, rowRange)
+                End If
             End If
         End If
     Next cell
@@ -658,13 +659,17 @@ Sub CopyPivotTableData()
     ' Copy and paste the filtered rows
     If Not copyRange Is Nothing Then
         copyRange.Copy
-        destCell.Offset(headerRows, 0).PasteSpecial Paste:=xlPasteValues
-        destCell.Offset(headerRows, 0).PasteSpecial Paste:=xlPasteFormats
+        Set pasteRange = destCell.Offset(headerRows, 0)
+        pasteRange.PasteSpecial Paste:=xlPasteValues
+        pasteRange.PasteSpecial Paste:=xlPasteFormats
+        
+        ' AutoFit the pasted table
+        ws.Range(pasteRange, pasteRange.End(xlToRight)).Columns.AutoFit
     End If
     
     ' Clean up
     Application.CutCopyMode = False
-    MsgBox "Data copied successfully!", vbInformation
+    MsgBox "Data copied successfully and columns adjusted!", vbInformation
 
 End Sub
 ```
