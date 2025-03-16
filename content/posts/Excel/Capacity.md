@@ -642,8 +642,8 @@ Sub CopyPivotTableData()
     ' Loop through the Grand Total column to find rows where the value is >21
     For Each cell In pt.DataBodyRange.Columns(lastCol).Cells
         If IsNumeric(cell.Value) And cell.Value > 21 Then
-            ' Get the actual row range within the Pivot Table
-            Set rowRange = Intersect(cell.EntireRow, pt.DataBodyRange)
+            ' Get the actual row range within the entire Pivot Table (including row fields)
+            Set rowRange = Intersect(cell.EntireRow, pt.TableRange1)
             
             ' If first row to copy, set copyRange
             If copyRange Is Nothing Then
