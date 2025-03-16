@@ -616,6 +616,7 @@ Sub CopyPivotTableData()
     Dim lastCol As Integer
     Dim headerRows As Integer
     Dim dataStartRow As Integer
+    Dim rowRange As Range
     
     ' Set the worksheet and pivot table
     Set ws = ThisWorkbook.Sheets("Summary")
@@ -641,12 +642,15 @@ Sub CopyPivotTableData()
     ' Loop through the Grand Total column to find rows where the value is >21
     For Each cell In pt.DataBodyRange.Columns(lastCol).Cells
         If IsNumeric(cell.Value) And cell.Value > 21 Then
+            ' Get the actual row range within the Pivot Table
+            Set rowRange = Intersect(cell.EntireRow, pt.DataBodyRange)
+            
             ' If first row to copy, set copyRange
             If copyRange Is Nothing Then
-                Set copyRange = cell.EntireRow.Intersect(pt.TableRange1, ws.Rows(cell.Row))
+                Set copyRange = rowRange
             Else
                 ' Extend the range to include this row
-                Set copyRange = Union(copyRange, cell.EntireRow.Intersect(pt.TableRange1, ws.Rows(cell.Row)))
+                Set copyRange = Union(copyRange, rowRange)
             End If
         End If
     Next cell
