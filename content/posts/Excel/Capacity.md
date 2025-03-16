@@ -626,8 +626,8 @@ Sub CopyPivotTableData()
     ' Identify the last column in the pivot table (Grand Total column is usually the last one)
     lastCol = pt.DataBodyRange.Columns.Count
     
-    ' Copy headers from the Pivot Table and paste into the destination
-    pt.TableRange1.Rows(1).Copy
+    ' Copy headers (first two rows) from the Pivot Table and paste into the destination
+    ws.Range(pt.TableRange1.Rows(1).Resize(2).Address).Copy ' Ensure both header rows are copied
     destCell.PasteSpecial Paste:=xlPasteValues
     destCell.PasteSpecial Paste:=xlPasteFormats
     
@@ -647,8 +647,8 @@ Sub CopyPivotTableData()
     ' Copy and paste the filtered rows
     If Not copyRange Is Nothing Then
         copyRange.Copy
-        destCell.Offset(1, 0).PasteSpecial Paste:=xlPasteValues
-        destCell.Offset(1, 0).PasteSpecial Paste:=xlPasteFormats
+        destCell.Offset(2, 0).Resize(copyRange.Rows.Count, copyRange.Columns.Count).PasteSpecial Paste:=xlPasteValues
+        destCell.Offset(2, 0).Resize(copyRange.Rows.Count, copyRange.Columns.Count).PasteSpecial Paste:=xlPasteFormats
     End If
     
     ' Clean up
