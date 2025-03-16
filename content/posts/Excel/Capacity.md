@@ -605,3 +605,53 @@ Function IsInCollection(col As Collection, value As String) As Boolean
     IsInCollection = False
 End Function
 ```
+
+```vb
+Sub CopyPivotTableData()
+    Dim ws As Worksheet
+    Dim pt As PivotTable
+    Dim rng As Range
+    Dim cell As Range
+    Dim copyRange As Range
+    Dim destCell As Range
+    Dim lastRow As Long
+    
+    ' Set worksheet and pivot table
+    Set ws = ThisWorkbook.Sheets("Summary")
+    Set pt = ws.PivotTables("GereralPivotTable")
+    
+    ' Find the last row of the pivot table
+    lastRow = pt.TableRange1.Rows.Count
+    
+    ' Set the destination cell
+    Set destCell = ws.Range("S4")
+    
+    ' Copy headers
+    pt.TableRange1.Rows(1).Copy
+    destCell.PasteSpecial Paste:=xlPasteValuesAndNumberFormats
+    
+    ' Loop through pivot table data to check Grand Total column
+    For Each cell In pt.DataBodyRange.Columns(pt.DataBodyRange.Columns.Count).Cells
+        If IsNumeric(cell.Value) And cell.Value > 21 Then
+            ' If first row to copy, set copyRange
+            If copyRange Is Nothing Then
+                Set copyRange = cell.EntireRow
+            Else
+                ' Extend the range to include this row
+                Set copyRange = Union(copyRange, cell.EntireRow)
+            End If
+        End If
+    Next cell
+    
+    ' Copy the filtered rows
+    If Not copyRange Is Nothing Then
+        copyRange.Copy
+        destCell.Offset(1, 0).PasteSpecial Paste:=xlPasteValuesAndNumberFormats
+    End If
+    
+    ' Clean up
+    Application.CutCopyMode = False
+    MsgBox "Data copied successfully!", vbInformation
+
+End Sub
+```
