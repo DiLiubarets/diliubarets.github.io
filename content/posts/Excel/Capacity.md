@@ -614,7 +614,8 @@ Sub CopyPivotTableData()
     Dim copyRange As Range
     Dim destCell As Range
     Dim lastCol As Integer
-    Dim lastRow As Integer
+    Dim headerRows As Integer
+    Dim dataStartRow As Integer
     
     ' Set the worksheet and pivot table
     Set ws = ThisWorkbook.Sheets("Summary")
@@ -623,23 +624,29 @@ Sub CopyPivotTableData()
     ' Set the destination cell (starting point for pasting)
     Set destCell = ws.Range("S4")
     
+    ' Define the number of header rows
+    headerRows = 2 ' Since your Pivot Table has two header rows
+    
     ' Identify the last column in the pivot table (Grand Total column is usually the last one)
     lastCol = pt.DataBodyRange.Columns.Count
     
     ' Copy headers (first two rows) from the Pivot Table and paste into the destination
-    ws.Range(pt.TableRange1.Rows(1).Resize(2).Address).Copy ' Ensure both header rows are copied
+    pt.TableRange1.Rows(1).Resize(headerRows).Copy
     destCell.PasteSpecial Paste:=xlPasteValues
     destCell.PasteSpecial Paste:=xlPasteFormats
+    
+    ' Determine where data starts (below the headers)
+    dataStartRow = headerRows + 1
     
     ' Loop through the Grand Total column to find rows where the value is >21
     For Each cell In pt.DataBodyRange.Columns(lastCol).Cells
         If IsNumeric(cell.Value) And cell.Value > 21 Then
             ' If first row to copy, set copyRange
             If copyRange Is Nothing Then
-                Set copyRange = cell.EntireRow
+                Set copyRange = cell.EntireRow.Intersect(pt.TableRange1, ws.Rows(cell.Row))
             Else
                 ' Extend the range to include this row
-                Set copyRange = Union(copyRange, cell.EntireRow)
+                Set copyRange = Union(copyRange, cell.EntireRow.Intersect(pt.TableRange1, ws.Rows(cell.Row)))
             End If
         End If
     Next cell
@@ -647,8 +654,8 @@ Sub CopyPivotTableData()
     ' Copy and paste the filtered rows
     If Not copyRange Is Nothing Then
         copyRange.Copy
-        destCell.Offset(2, 0).Resize(copyRange.Rows.Count, copyRange.Columns.Count).PasteSpecial Paste:=xlPasteValues
-        destCell.Offset(2, 0).Resize(copyRange.Rows.Count, copyRange.Columns.Count).PasteSpecial Paste:=xlPasteFormats
+        destCell.Offset(headerRows, 0).PasteSpecial Paste:=xlPasteValues
+        destCell.Offset(headerRows, 0).PasteSpecial Paste:=xlPasteFormats
     End If
     
     ' Clean up
