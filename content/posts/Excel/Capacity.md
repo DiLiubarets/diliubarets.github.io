@@ -724,3 +724,23 @@ ErrHandler:
     CountSelectedItems = CVErr(xlErrValue)
 End Function
 ```
+
+```vb
+Private Sub Workbook_SheetPivotTableUpdate(ByVal Sh As Object, ByVal Target As PivotTable)
+    Dim count As Integer
+    Dim si As SlicerItem
+    Dim sc As SlicerCache
+
+    On Error Resume Next
+    Set sc = ThisWorkbook.SlicerCaches("Slicer_Region") ' Replace with your slicer name
+    count = 0
+
+    For Each si In sc.SlicerItems
+        If si.Selected Then count = count + 1
+    Next si
+
+    ' Output the count to a specific cell
+    Sheets("Sheet1").Range("B1").Value = count ' Change to your desired sheet and cell
+End Sub
+
+```
