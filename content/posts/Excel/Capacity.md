@@ -693,3 +693,34 @@ Function CountSelectedItems(slicerName As String) As Integer
 End Function
 =CountSelectedItems("Slicer_Region")
 ```
+
+```vb
+Function CountSelectedItems(slicerName As String) As Variant
+    Dim sc As SlicerCache
+    Dim si As SlicerItem
+    Dim count As Integer
+
+    Debug.Print "Function started"
+
+    On Error GoTo ErrHandler
+
+    Set sc = ThisWorkbook.SlicerCaches(slicerName)
+    Debug.Print "SlicerCache found: " & slicerName
+
+    count = 0
+    For Each si In sc.SlicerItems
+        If si.Selected Then
+            count = count + 1
+            Debug.Print "Selected item: " & si.Name
+        End If
+    Next si
+
+    Debug.Print "Total selected: " & count
+    CountSelectedItems = count
+    Exit Function
+
+ErrHandler:
+    Debug.Print "Error occurred in function"
+    CountSelectedItems = CVErr(xlErrValue)
+End Function
+```
