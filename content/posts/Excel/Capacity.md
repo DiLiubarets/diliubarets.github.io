@@ -673,3 +673,23 @@ Sub CopyPivotTableData()
 
 End Sub
 ```
+
+```vb
+Function CountSelectedItems(slicerName As String) As Integer
+    Dim sl As Slicer
+    Dim si As SlicerItem
+    Dim count As Integer
+    
+    Set sl = ThisWorkbook.SlicerCaches(slicerName).Slicers(1)
+    count = 0
+    
+    For Each si In sl.SlicerCache.SlicerItems
+        If si.Selected Then
+            count = count + 1
+        End If
+    Next si
+    
+    CountSelectedItems = count
+End Function
+=CountSelectedItems("Slicer_Region")
+```
