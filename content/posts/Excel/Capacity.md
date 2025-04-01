@@ -1,4 +1,66 @@
 ```vb
+Sub CopyKeyColumnAndExtractText()
+
+    Dim wsSource As Worksheet
+    Dim wsDest As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim keyCol As Range
+    Dim destCol As Range
+    
+    ' Set your source and destination sheets
+    Set wsSource = ThisWorkbook.Sheets("Sheet1") ' Change to your source sheet name
+    Set wsDest = ThisWorkbook.Sheets("general_report")
+    
+    ' Find the "Key" column in the source sheet
+    Dim keyColNum As Long
+    keyColNum = 0
+    For i = 1 To wsSource.Cells(1, wsSource.Columns.Count).End(xlToLeft).Column
+        If Trim(wsSource.Cells(1, i).Value) = "Key" Then
+            keyColNum = i
+            Exit For
+        End If
+    Next i
+    
+    If keyColNum = 0 Then
+        MsgBox "Column 'Key' not found in source sheet.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Find last row in source sheet for the Key column
+    lastRow = wsSource.Cells(wsSource.Rows.Count, keyColNum).End(xlUp).Row
+    
+    ' Copy the Key column values only to destination sheet
+    Set keyCol = wsSource.Range(wsSource.Cells(1, keyColNum), wsSource.Cells(lastRow, keyColNum))
+    Set destCol = wsDest.Range("A1") ' Starting cell in general_report
+    
+    destCol.Resize(keyCol.Rows.Count, 1).Value = keyCol.Value
+    
+    ' Add header for extracted text
+    wsDest.Range("B1").Value = "Text After '-'"
+    
+    ' Loop through each row and extract text after "-"
+    For i = 2 To keyCol.Rows.Count
+        Dim fullText As String
+        fullText = wsDest.Cells(i, 1).Value
+        
+        If InStr(fullText, "-") > 0 Then
+            wsDest.Cells(i, 2).Value = Trim(Mid(fullText, InStr(fullText, "-") + 1))
+        Else
+            wsDest.Cells(i, 2).Value = "" ' No hyphen found
+        End If
+    Next i
+    
+    MsgBox "Key column copied and processed successfully!", vbInformation
+
+End Sub
+```
+
+
+
+
+
+```vb
 Sub CountEmployeesByProject()
     Dim ws As Worksheet
     Dim pt As PivotTable
