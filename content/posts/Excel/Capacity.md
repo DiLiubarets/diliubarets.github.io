@@ -1,4 +1,64 @@
 ```vb
+Sub add_Program_NameKeyCol()
+
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim sprintCol As Long
+    Dim programCol As Long
+    Dim foundCell As Range
+    Dim i As Long
+
+    For Each ws In ThisWorkbook.Worksheets
+        If ws.Name <> "Instructions" Then
+            With ws
+                Set foundCell = .Rows(1).Find(What:="Key", LookAt:=xlWhole, MatchCase:=False)
+
+                If Not foundCell Is Nothing Then
+                    sprintCol = foundCell.Column
+                    lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+
+                    programCol = sprintCol + 1
+
+                    ' Insert new column for Program Name
+                    .Columns(programCol).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+                    .Cells(1, programCol).Value = "Program Name"
+
+                    ' Apply formula to extract text before "-"
+                    .Range(.Cells(2, programCol), .Cells(lastRow, programCol)).FormulaR1C1 = _
+                        "=TEXTBEFORE(RC" & sprintCol & ", ""-"")"
+
+                    ' Copy and paste values to remove formulas
+                    With .Range(.Cells(2, programCol), .Cells(lastRow, programCol))
+                        .Copy
+                        .PasteSpecial Paste:=xlPasteValues
+                    End With
+
+                    ' Remove hyperlinks and hyperlink-like formatting
+                    On Error Resume Next ' In case there are no hyperlinks
+                    .Range(.Cells(2, programCol), .Cells(lastRow, programCol)).Hyperlinks.Delete
+                    On Error GoTo 0
+
+                    ' Remove blue underline formatting (hyperlink appearance)
+                    With .Range(.Cells(2, programCol), .Cells(lastRow, programCol)).Font
+                        .Underline = xlUnderlineStyleNone
+                        .Color = RGB(0, 0, 0) ' Set to black or default font color
+                    End With
+
+                End If
+            End With
+        End If
+    Next ws
+
+    Application.CutCopyMode = False
+    MsgBox "Program Name column added and hyperlinks removed.", vbInformation
+
+End Sub
+```
+
+
+
+
+```vb
 Sub CopyKeyColumnAndExtractText()
 
     Dim wsSource As Worksheet
