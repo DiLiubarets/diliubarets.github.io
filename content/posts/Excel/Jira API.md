@@ -104,3 +104,51 @@ For Each issue In JSON("issues")
     rowNum = rowNum + 1
 Next issue
 ```
+
+python inspect
+
+```python
+import requests
+import json
+from requests.auth import HTTPBasicAuth
+
+# === Your Jira credentials ===
+username = "your-username"       # e.g. "admin" or your email
+password = "your-password"       # actual password (not API token)
+
+# === Jira API endpoint ===
+project_key = "MYPROJECT"
+url = f"https://your-jira-instance.com/rest/api/3/search?jql=project={project_key}"
+
+# === Send GET request with Basic Auth ===
+response = requests.get(
+    url,
+    auth=HTTPBasicAuth(username, password),
+    headers={"Content-Type": "application/json"}
+)
+
+# === Inspect the response ===
+if response.status_code == 200:
+    data = response.json()
+    
+    # Pretty-print the full JSON response
+    print(json.dumps(data, indent=2))
+    
+    # Inspect the first issue
+    if data["issues"]:
+        first_issue = data["issues"][0]
+        print("\n--- First Issue ---")
+        print(f"Key: {first_issue['key']}")
+        print(f"Summary: {first_issue['fields']['summary']}")
+        
+        # Loop through custom fields
+        print("\n--- Custom Fields ---")
+        for key, value in first_issue["fields"].items():
+            if key.startswith("customfield_"):
+                print(f"{key}: {value}")
+    else:
+        print("No issues found.")
+else:
+    print(f"Request failed with status code {response.status_code}")
+    print(response.text)
+```
