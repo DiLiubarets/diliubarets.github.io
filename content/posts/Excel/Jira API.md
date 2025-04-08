@@ -152,3 +152,76 @@ else:
     print(f"Request failed with status code {response.status_code}")
     print(response.text)
 ```
+
+
+pagination
+```vb
+Sub GetJiraProjectIssues()
+    Dim http As Object
+    Dim JSON As Object
+    Dim url As String
+    Dim username As String
+    Dim apiToken As String
+    Dim startAt As Long
+    Dim maxResults As Long
+    Dim total As Long
+    Dim issues As Object
+    Dim issue As Object
+    Dim i As Long
+
+    ' === Credentials ===
+    username = "your-email@example.com"
+    apiToken = "your-api-token" ' or password if using Jira Server
+
+    ' === Jira settings ===
+    Dim baseUrl As String
+    Dim projectKey As String
+    baseUrl = "https://yourcompany.atlassian.net"
+    projectKey = "MYPROJECT"
+    
+    startAt = 0
+    maxResults = 50 ' Jira default max is 50 for cloud
+
+    Do
+        ' === Build API URL with pagination ===
+        url = baseUrl & "/rest/api/3/search?jql=project=" & projectKey & _
+              "&startAt=" & startAt & "&maxResults=" & maxResults & _
+              "&fields=summary,status,assignee"
+
+        ' === Create HTTP request ===
+        Set http = CreateObject("MSXML2.XMLHTTP")
+        http.Open "GET", url, False
+        http.setRequestHeader "Content-Type", "application/json"
+        http.setRequestHeader "Authorization", "Basic " & Base64Encode(username & ":" & apiToken)
+        http.Send
+
+        ' === Parse response ===
+        If http.Status = 200 Then
+            Set JSON = JsonConverter.ParseJson(http.responseText)
+            Set issues = JSON("issues")
+            total = JSON("total")
+
+            ' === Loop through issues ===
+            For Each issue In issues
+                Debug.Print "Key: " & issue("key")
+                Debug.Print "Summary: " & issue("fields")("summary")
+                Debug.Print "Status: " & issue("fields")("status")("name")
+                If Not issue("fields")("assignee") Is Nothing Then
+                    Debug.Print "Assignee: " & issue("fields")("assignee")("displayName")
+                Else
+                    Debug.Print "Assignee: Unassigned"
+                End If
+                Debug.Print "------"
+            Next issue
+
+            ' === Prepare for next page ===
+            startAt = startAt + maxResults
+        Else
+            MsgBox "Error: " & http.Status & " - " & http.responseText, vbCritical
+            Exit Sub
+        End If
+    Loop While startAt < total
+
+    MsgBox "All issues retrieved successfully.", vbInformation
+End Sub
+```
