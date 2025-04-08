@@ -84,3 +84,23 @@ Function Base64Encode(text As String) As String
 End Function
 
 ```
+
+safe loop
+```vb
+For Each issue In JSON("issues")
+    For Each key In firstRecord.keys
+        If issue("fields").Exists(key) Then
+            On Error Resume Next
+            If IsObject(issue("fields")(key)) Then
+                ws.Cells(rowNum, headers(key)).Value = "[Object]"
+            Else
+                ws.Cells(rowNum, headers(key)).Value = issue("fields")(key)
+            End If
+            On Error GoTo 0
+        Else
+            ws.Cells(rowNum, headers(key)).Value = "N/A"
+        End If
+    Next key
+    rowNum = rowNum + 1
+Next issue
+```
