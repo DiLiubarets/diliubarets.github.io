@@ -19,7 +19,7 @@ helping:
 [[Alen DumpData Demand]]
 
 Working on automating weekly report 
-[[Weekly performance report 350 2A]]
+[[Slicers]]
 
 Daily work:
 [[Tasks Automation]]
