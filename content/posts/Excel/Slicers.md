@@ -1,19 +1,22 @@
 ```vb
 Private Sub Workbook_SlicerChange(ByVal Slicer As Slicer)
+    Dim sourceSlicerName As String
+    Dim targetSlicerName As String
+    Dim slicerName1 As String
+    Dim slicerName2 As String
     Dim slicer1 As SlicerCache
     Dim slicer2 As SlicerCache
     Dim item As SlicerItem
     Dim selectedItems As Collection
     Dim i As Long
-    Dim sourceSlicerName As String
-    Dim targetSlicerName As String
     
     ' Define your slicer names
-    Dim slicerName1 As String
-    Dim slicerName2 As String
+    slicerName1 = "Slicer_SlicerName1" ' First slicer
+    slicerName2 = "Slicer_SlicerName2" ' Second slicer
     
-    slicerName1 = "Slicer_SlicerName1" ' First slicer name
-    slicerName2 = "Slicer_SlicerName2" ' Second slicer name
+    ' Check if Slicer object is valid
+    If Slicer Is Nothing Then Exit Sub
+    If Slicer.SlicerCache Is Nothing Then Exit Sub
     
     ' Determine which slicer was changed
     If Slicer.SlicerCache.Name = slicerName1 Then
@@ -23,7 +26,7 @@ Private Sub Workbook_SlicerChange(ByVal Slicer As Slicer)
         sourceSlicerName = slicerName2
         targetSlicerName = slicerName1
     Else
-        Exit Sub ' Not one of the slicers we want to sync
+        Exit Sub ' Not a slicer we want to sync
     End If
     
     ' Set slicer caches
@@ -40,17 +43,17 @@ Private Sub Workbook_SlicerChange(ByVal Slicer As Slicer)
         End If
     Next item
     
-    ' Prevent error if slicer is cleared
+    ' Clear filters on target slicer
     On Error Resume Next
     slicer2.ClearManualFilter
     On Error GoTo 0
     
-    ' Deselect all items first
+    ' Deselect all first
     For Each item In slicer2.SlicerItems
         item.Selected = False
     Next item
     
-    ' Select items in target slicer that match source slicer
+    ' Select matching items
     For i = 1 To selectedItems.Count
         On Error Resume Next
         slicer2.SlicerItems(selectedItems(i)).Selected = True
